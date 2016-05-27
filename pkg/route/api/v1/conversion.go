@@ -8,6 +8,20 @@ import (
 )
 
 func addConversionFuncs(scheme *runtime.Scheme) {
+	if err := scheme.AddDefaultingFuncs(
+		func(obj *RouteTargetReference) {
+			if len(obj.Kind) == 0 {
+				obj.Kind = "Service"
+			}
+			if obj.Weight == nil {
+				obj.Weight = new(int32)
+				*obj.Weight = 100
+			}
+		},
+	); err != nil {
+		panic(err)
+	}
+
 	if err := scheme.AddConversionFuncs(); err != nil {
 		panic(err)
 	}
