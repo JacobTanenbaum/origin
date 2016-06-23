@@ -225,6 +225,9 @@ backend be_edge_http_{{$cfgIdx}}
     {{ else }}
   balance leastconn
     {{ end }}
+    {{with $value := index $cfg.Annotations (print $cfg.Name ".timeout")}}
+  timeout server  {{$value}}
+    {{end}}
   timeout check 5000ms
   http-request set-header X-Forwarded-Host %[req.hdr(host)]
   http-request set-header X-Forwarded-Port %[dst_port]
