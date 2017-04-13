@@ -2,7 +2,7 @@ package plugin
 
 import (
 	"fmt"
-	"io/ioutil"
+//	"io/ioutil"
 	"net"
 	"os"
 	"strings"
@@ -159,11 +159,11 @@ func (plugin *OsdnNode) SetupSDN() (bool, error) {
 	if err := os.MkdirAll("/run/openshift-sdn", 0700); err != nil {
 		return false, err
 	}
-	config := fmt.Sprintf("export OPENSHIFT_CLUSTER_SUBNET=%s", clusterNetworkCIDR)
-	err = ioutil.WriteFile("/run/openshift-sdn/config.env", []byte(config), 0644)
-	if err != nil {
-		return false, err
-	}
+//	config := fmt.Sprintf("export OPENSHIFT_CLUSTER_SUBNET=%s", clusterNetworkCIDR)
+//	err = ioutil.WriteFile("/run/openshift-sdn/config.env", []byte(config), 0644)
+//	if err != nil {
+//		return false, err
+//	}
 
 	err = plugin.oc.SetupOVS(clusterNetworkCIDR, serviceNetworkCIDR, localSubnetCIDR, localSubnetGateway)
 	if err != nil {
