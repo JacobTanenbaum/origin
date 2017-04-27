@@ -34,20 +34,34 @@ func clusterNetworkToString(n *osapi.ClusterNetwork) string {
 	return fmt.Sprintf("%s (network: %q, hostSubnetBits: %d, serviceNetwork: %q, pluginName: %q)", n.Name, n.Network, n.HostSubnetLength, n.ServiceNetwork, n.PluginName)
 }
 
+func cidrListContains(cidrList []*net.IPNet, ipaddr net.IP)(*net.IPNet, bool) {
+	for _, cidr := range cidrList {
+		if cidr.Contains(ipaddr) {
+			return cidr, true
+			}
+	}
+	return nil, false
+}
+
 type NetworkInfo struct {
-	ClusterNetwork *net.IPNet
+	ClusterNetwork []*net.IPNet
 	ServiceNetwork *net.IPNet
 }
 
+
 func parseNetworkInfo(clusterNetwork string, serviceNetwork string) (*NetworkInfo, error) {
-	cn, err := netutils.ParseCIDRMask(clusterNetwork)
+	cn, err := netutils.ParseCIDRListMask(clusterNetwork)
 	if err != nil {
-		_, cn, err := net.ParseCIDR(clusterNetwork)
-		if err != nil {
-			return nil, fmt.Errorf("failed to parse ClusterNetwork CIDR %s: %v", clusterNetwork, err)
-		}
-		glog.Errorf("Configured clusterNetworkCIDR value %q is invalid; treating it as %q", clusterNetwork, cn.String())
+		return nil, fmt.Errorf("failed to parse ClusterNetwork CIDRs %s: %v", clusterNetwork, err)
 	}
+	//cn, err := netutils.ParseCIDRMask(clusterNetwork)
+	//if err != nil {
+	//	_, cn, err := net.ParseCIDR(clusterNetwork)
+	//	if err != nil {
+	//		return nil, fmt.Errorf("failed to parse ClusterNetwork CIDR %s: %v", clusterNetwork, err)
+	//	}
+	//	glog.Errorf("Configured clusterNetworkCIDR value %q is invalid; treating it as %q", clusterNetwork, cn.String())
+	//}
 	sn, err := netutils.ParseCIDRMask(serviceNetwork)
 	if err != nil {
 		_, sn, err := net.ParseCIDR(serviceNetwork)
@@ -75,9 +89,12 @@ func (ni *NetworkInfo) validateNodeIP(nodeIP string) error {
 		return fmt.Errorf("failed to parse node IP %s", nodeIP)
 	}
 
-	if ni.ClusterNetwork.Contains(ipaddr) {
-		return fmt.Errorf("node IP %s conflicts with cluster network %s", nodeIP, ni.ClusterNetwork.String())
+	if matchedIP, match := cidrListContains(ni.ClusterNetwork, ipaddr); match {
+		return fmt.Errorf("node IP %s conflicts with cluster network %s", nodeIP, matchedIP.String())
 	}
+//	if ni.ClusterNetwork.Contains(ipaddr) {
+//		return fmt.Errorf("node IP %s conflicts with cluster network %s", nodeIP, ni.ClusterNetwork.String())
+//	}
 	if ni.ServiceNetwork.Contains(ipaddr) {
 		return fmt.Errorf("node IP %s conflicts with service network %s", nodeIP, ni.ServiceNetwork.String())
 	}

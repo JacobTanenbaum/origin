@@ -4,6 +4,7 @@ import (
 	"encoding/binary"
 	"fmt"
 	"net"
+	"strings"
 
 	"github.com/golang/glog"
 	kerrors "k8s.io/kubernetes/pkg/util/errors"
@@ -112,4 +113,16 @@ func ParseCIDRMask(cidr string) (*net.IPNet, error) {
 		return nil, fmt.Errorf("CIDR network specification %q is not in canonical form (should be %s/%d or %s/%d?)", cidr, ip.Mask(net.Mask).String(), maskLen, ip.String(), addrLen)
 	}
 	return net, nil
+}
+
+func ParseCIDRListMask(cidrList string) ([]*net.IPNet, error) {
+	var cn []*net.IPNet
+	for _, cidr := range strings.Split(cidrList, ",") {
+		net, err := ParseCIDRMask(cidr)
+		if err != nil {
+			return nil, err
+		}
+		cn = append(cn, net)
+	}
+	return cn, nil
 }

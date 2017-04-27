@@ -19,7 +19,7 @@ import (
 	"github.com/openshift/origin/pkg/util/netutils"
 )
 
-func (master *OsdnMaster) SubnetStartMaster(clusterNetwork *net.IPNet, hostSubnetLength uint32) error {
+func (master *OsdnMaster) SubnetStartMaster(clusterNetwork []*net.IPNet, hostSubnetLength uint32) error {
 	subrange := make([]string, 0)
 	subnets, err := master.osClient.HostSubnets().List(kapi.ListOptions{})
 	if err != nil {

@@ -205,7 +205,13 @@ func (node *OsdnNode) Start() error {
 		return fmt.Errorf("failed to get network information: %v", err)
 	}
 
-	nodeIPTables := newNodeIPTables(node.networkInfo.ClusterNetwork.String(), node.iptablesSyncPeriod)
+	var cidrList []string
+	for  _, cidr := range node.networkInfo.ClusterNetwork {
+		cidrList = append(cidrList, cidr.String())
+	}
+
+	//nodeIPTables := newNodeIPTables(node.networkInfo.ClusterNetwork.String(), node.iptablesSyncPeriod)
+	nodeIPTables := newNodeIPTables(cidrList, node.iptablesSyncPeriod)
 	if err = nodeIPTables.Setup(); err != nil {
 		return fmt.Errorf("failed to set up iptables: %v", err)
 	}

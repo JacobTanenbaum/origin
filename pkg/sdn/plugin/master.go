@@ -47,12 +47,12 @@ func StartMaster(networkConfig osconfigapi.MasterNetworkConfig, osClient *osclie
 	updateConfig := false
 	cn, err := master.osClient.ClusterNetwork().Get(osapi.ClusterNetworkDefault)
 	if err == nil {
-		if master.networkInfo.ClusterNetwork.String() != cn.Network ||
-			networkConfig.HostSubnetLength != cn.HostSubnetLength ||
-			master.networkInfo.ServiceNetwork.String() != cn.ServiceNetwork ||
-			networkConfig.NetworkPluginName != cn.PluginName {
+		//if master.networkInfo.ClusterNetwork.String() != cn.Network ||
+		//	networkConfig.HostSubnetLength != cn.HostSubnetLength ||
+		//	master.networkInfo.ServiceNetwork.String() != cn.ServiceNetwork ||
+		//	networkConfig.NetworkPluginName != cn.PluginName {
 			updateConfig = true
-		}
+		//}
 	} else {
 		cn = &osapi.ClusterNetwork{
 			TypeMeta:   kapiunversioned.TypeMeta{Kind: "ClusterNetwork"},
@@ -64,11 +64,13 @@ func StartMaster(networkConfig osconfigapi.MasterNetworkConfig, osClient *osclie
 		if err = master.validateNetworkConfig(); err != nil {
 			return err
 		}
-		size, len := master.networkInfo.ClusterNetwork.Mask.Size()
-		if networkConfig.HostSubnetLength < 1 || networkConfig.HostSubnetLength >= uint32(len-size) {
-			return fmt.Errorf("invalid HostSubnetLength %d for network %s (must be from 1 to %d)", networkConfig.HostSubnetLength, networkConfig.ClusterNetworkCIDR, len-size)
+		for _, cidr := range master.networkInfo.ClusterNetwork {
+			size, len := cidr.Mask.Size()
+			if networkConfig.HostSubnetLength < 1 || networkConfig.HostSubnetLength >= uint32(len-size) {
+				return fmt.Errorf("invalid HostSubnetLength %d for network %s (must be from 1 to %d)", networkConfig.HostSubnetLength, cidr, len-size)
+			}
 		}
-		cn.Network = master.networkInfo.ClusterNetwork.String()
+		//cn.Network = master.networkInfo.ClusterNetwork.String()
 		cn.HostSubnetLength = networkConfig.HostSubnetLength
 		cn.ServiceNetwork = master.networkInfo.ServiceNetwork.String()
 		cn.PluginName = networkConfig.NetworkPluginName
@@ -119,11 +121,13 @@ func (master *OsdnMaster) validateNetworkConfig() error {
 
 	// Ensure cluster and service network don't overlap with host networks
 	for _, ipNet := range hostIPNets {
-		if ipNet.Contains(ni.ClusterNetwork.IP) {
-			errList = append(errList, fmt.Errorf("cluster IP: %s conflicts with host network: %s", ni.ClusterNetwork.IP.String(), ipNet.String()))
-		}
-		if ni.ClusterNetwork.Contains(ipNet.IP) {
-			errList = append(errList, fmt.Errorf("host network with IP: %s conflicts with cluster network: %s", ipNet.IP.String(), ni.ClusterNetwork.String()))
+		for _, cidr := range ni.ClusterNetwork {
+			if ipNet.Contains(cidr.IP) {
+				errList = append(errList, fmt.Errorf("cluster IP: %s conflicts with host network: %s", cidr.IP.String(), ipNet.String()))
+			}
+			if cidr.Contains(ipNet.IP) {
+				errList = append(errList, fmt.Errorf("host network with IP: %s conflicts with cluster network: %s", ipNet.IP.String(), cidr.String()))
+			}
 		}
 		if ipNet.Contains(ni.ServiceNetwork.IP) {
 			errList = append(errList, fmt.Errorf("service IP: %s conflicts with host network: %s", ni.ServiceNetwork.String(), ipNet.String()))
@@ -144,8 +148,9 @@ func (master *OsdnMaster) validateNetworkConfig() error {
 			errList = append(errList, fmt.Errorf("failed to parse network address: %s", sub.Subnet))
 			continue
 		}
-		if !ni.ClusterNetwork.Contains(subnetIP) {
-			errList = append(errList, fmt.Errorf("existing node subnet: %s is not part of cluster network: %s", sub.Subnet, ni.ClusterNetwork.String()))
+		//if !ni.ClusterNetwork.Contains(subnetIP) {
+		if matchedIP, match := cidrListContains(ni.ClusterNetwork, subnetIP); !match {
+			errList = append(errList, fmt.Errorf("existing node subnet: %s is not part of cluster network", sub.Subnet))
 		}
 	}
 

@@ -532,7 +532,7 @@ func newAdmissionChain(pluginNames []string, admissionConfigFilename string, plu
 
 		case serviceadmit.RestrictedEndpointsPluginName:
 			// we need to set some customer parameters, so create by hand
-			restrictedNetworks, err := serviceadmit.ParseSimpleCIDRRules([]string{options.NetworkConfig.ClusterNetworkCIDR, options.NetworkConfig.ServiceNetworkCIDR})
+			restrictedNetworks, err := serviceadmit.ParseSimpleCIDRRules([]string{options.NetworkConfig.ServiceNetworkCIDR})
 			if err != nil {
 				// should have been caught with validation
 				return nil, err

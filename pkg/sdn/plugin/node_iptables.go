@@ -21,13 +21,13 @@ type FirewallRule struct {
 
 type NodeIPTables struct {
 	ipt                iptables.Interface
-	clusterNetworkCIDR string
+	clusterNetworkCIDR []string
 	syncPeriod         time.Duration
 
 	mu sync.Mutex // Protects concurrent access to syncIPTableRules()
 }
 
-func newNodeIPTables(clusterNetworkCIDR string, syncPeriod time.Duration) *NodeIPTables {
+func newNodeIPTables(clusterNetworkCIDR []string, syncPeriod time.Duration) *NodeIPTables {
 	return &NodeIPTables{
 		ipt:                iptables.New(kexec.New(), utildbus.New(), iptables.ProtocolIpv4),
 		clusterNetworkCIDR: clusterNetworkCIDR,
@@ -92,12 +92,28 @@ const VXLAN_PORT = "4789"
 
 // Get openshift iptables rules
 func (n *NodeIPTables) getStaticNodeIPTablesRules() []FirewallRule {
-	return []FirewallRule{
-		{"nat", "POSTROUTING", []string{"-s", n.clusterNetworkCIDR, "-j", "MASQUERADE"}},
-		{"filter", "INPUT", []string{"-p", "udp", "-m", "multiport", "--dports", VXLAN_PORT, "-m", "comment", "--comment", "001 vxlan incoming", "-j", "ACCEPT"}},
-		{"filter", "INPUT", []string{"-i", TUN, "-m", "comment", "--comment", "traffic from SDN", "-j", "ACCEPT"}},
-		{"filter", "INPUT", []string{"-i", "docker0", "-m", "comment", "--comment", "traffic from docker", "-j", "ACCEPT"}},
-		{"filter", "FORWARD", []string{"-d", n.clusterNetworkCIDR, "-j", "ACCEPT"}},
-		{"filter", "FORWARD", []string{"-s", n.clusterNetworkCIDR, "-j", "ACCEPT"}},
+	var firewallRule []FirewallRule
+
+	firewallRule = append(firewallRule,
+		FirewallRule{"filter", "INPUT", []string{"-p", "udp", "-m", "multiport", "--dports", VXLAN_PORT, "-m", "comment", "--comment", "001 vxlan incoming", "-j", "ACCEPT"}},
+		FirewallRule{"filter", "INPUT", []string{"-i", TUN, "-m", "comment", "--comment", "traffic from SDN", "-j", "ACCEPT"}},
+		FirewallRule{"filter", "INPUT", []string{"-i", "docker0", "-m", "comment", "--comment", "traffic from docker", "-j", "ACCEPT"}})
+
+	for _, cidr := range n.clusterNetworkCIDR {
+		firewallRule = append(firewallRule,
+			FirewallRule{"nat", "POSTROUTING", []string{"-s", cidr, "-j", "MASQUERADE"}},
+			FirewallRule{"filter", "FORWARD", []string{"-d", cidr, "-j", "ACCEPT"}},
+			FirewallRule{"filter", "FORWARD", []string{"-s", cidr, "-j", "ACCEPT"}})
 	}
+
+
+	return firewallRule
+//	return []FirewallRule{
+//		{"nat", "POSTROUTING", []string{"-s", n.clusterNetworkCIDR, "-j", "MASQUERADE"}},
+//		{"filter", "INPUT", []string{"-p", "udp", "-m", "multiport", "--dports", VXLAN_PORT, "-m", "comment", "--comment", "001 vxlan incoming", "-j", "ACCEPT"}},
+//		{"filter", "INPUT", []string{"-i", TUN, "-m", "comment", "--comment", "traffic from SDN", "-j", "ACCEPT"}},
+//		{"filter", "INPUT", []string{"-i", "docker0", "-m", "comment", "--comment", "traffic from docker", "-j", "ACCEPT"}},
+//		{"filter", "FORWARD", []string{"-d", n.clusterNetworkCIDR, "-j", "ACCEPT"}},
+//		{"filter", "FORWARD", []string{"-s", n.clusterNetworkCIDR, "-j", "ACCEPT"}},
+//	}
 }
