@@ -214,10 +214,12 @@ EndpointLoop:
 		for _, ss := range ep.Subsets {
 			for _, addr := range ss.Addresses {
 				IP := net.ParseIP(addr.IP)
-				if !proxy.networkInfo.ClusterNetwork.Contains(IP) && !proxy.networkInfo.ServiceNetwork.Contains(IP) {
-					if proxy.firewallBlocksIP(ns, IP) {
-						glog.Warningf("Service '%s' in namespace '%s' has an Endpoint pointing to firewalled destination (%s)", ep.ObjectMeta.Name, ns, addr.IP)
-						continue EndpointLoop
+				for _, cidr := range proxy.networkInfo.ClusterNetwork {
+					if !cidr.Contains(IP) && !proxy.networkInfo.ServiceNetwork.Contains(IP) {
+						if proxy.firewallBlocksIP(ns, IP) {
+							glog.Warningf("Service '%s' in namespace '%s' has an Endpoint pointing to firewalled destination (%s)", ep.ObjectMeta.Name, ns, addr.IP)
+							continue EndpointLoop
+						}
 					}
 				}
 			}

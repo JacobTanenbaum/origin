@@ -21,7 +21,7 @@ type OsdnMaster struct {
 	kClient         *kclientset.Clientset
 	osClient        *osclient.Client
 	networkInfo     *NetworkInfo
-	subnetAllocator *netutils.SubnetAllocator
+	subnetAllocator []*netutils.SubnetAllocator
 	vnids           *masterVNIDMap
 }
 
@@ -149,7 +149,7 @@ func (master *OsdnMaster) validateNetworkConfig() error {
 			continue
 		}
 		//if !ni.ClusterNetwork.Contains(subnetIP) {
-		if matchedIP, match := cidrListContains(ni.ClusterNetwork, subnetIP); !match {
+		if _, match := cidrListContains(ni.ClusterNetwork, subnetIP); !match {
 			errList = append(errList, fmt.Errorf("existing node subnet: %s is not part of cluster network", sub.Subnet))
 		}
 	}

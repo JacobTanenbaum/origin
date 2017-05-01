@@ -81,7 +81,7 @@ func newDefaultPodManager(host knetwork.Host) *podManager {
 // Generates a CNI IPAM config from a given node cluster and local subnet that
 // CNI 'host-local' IPAM plugin will use to create an IP address lease for the
 // container
-func getIPAMConfig(clusterNetwork *net.IPNet, localSubnet string) ([]byte, error) {
+func getIPAMConfig(clusterNetwork []*net.IPNet, localSubnet string) ([]byte, error) {
 	nodeNet, err := cnitypes.ParseCIDR(localSubnet)
 	if err != nil {
 		return nil, fmt.Errorf("error parsing node network '%s': %v", localSubnet, err)
@@ -93,6 +93,7 @@ func getIPAMConfig(clusterNetwork *net.IPNet, localSubnet string) ([]byte, error
 		Routes []cnitypes.Route `json:"routes"`
 	}
 
+
 	type cniNetworkConfig struct {
 		Name string         `json:"name"`
 		Type string         `json:"type"`
@@ -100,6 +101,27 @@ func getIPAMConfig(clusterNetwork *net.IPNet, localSubnet string) ([]byte, error
 	}
 
 	_, mcnet, _ := net.ParseCIDR("224.0.0.0/4")
+
+	routes := []cnitypes.Route{
+			{
+				//Default route
+				Dst: net.IPNet{
+					IP: net.IPv4zero,
+					Mask: net.IPMask(net.IPv4zero),
+				},
+				GW: netutils.GenerateDefaultGateway(nodeNet),
+			},
+			{
+					//Multicast
+					Dst: *mcnet,
+			},
+		}
+
+
+	for _, cidr := range clusterNetwork {
+		routes = append(routes, cnitypes.Route{Dst: *cidr})
+	}
+
 	return json.Marshal(&cniNetworkConfig{
 		Name: "openshift-sdn",
 		Type: "openshift-sdn",
@@ -109,24 +131,7 @@ func getIPAMConfig(clusterNetwork *net.IPNet, localSubnet string) ([]byte, error
 				IP:   nodeNet.IP,
 				Mask: nodeNet.Mask,
 			},
-			Routes: []cnitypes.Route{
-				{
-					// Default route
-					Dst: net.IPNet{
-						IP:   net.IPv4zero,
-						Mask: net.IPMask(net.IPv4zero),
-					},
-					GW: netutils.GenerateDefaultGateway(nodeNet),
-				},
-				{
-					// Cluster network
-					Dst: *clusterNetwork,
-				},
-				{
-					// Multicast
-					Dst: *mcnet,
-				},
-			},
+			Routes: routes,
 		},
 	})
 }
