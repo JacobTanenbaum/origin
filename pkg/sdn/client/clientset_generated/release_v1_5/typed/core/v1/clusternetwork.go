@@ -6,6 +6,7 @@ import (
 	api_v1 "k8s.io/kubernetes/pkg/api/v1"
 	restclient "k8s.io/kubernetes/pkg/client/restclient"
 	watch "k8s.io/kubernetes/pkg/watch"
+	log "github.com/golang/glog"
 )
 
 // ClusterNetworksGetter has a method to return a ClusterNetworkInterface.
@@ -50,6 +51,8 @@ func (c *clusterNetworks) Create(clusterNetwork *v1.ClusterNetwork) (result *v1.
 		Body(clusterNetwork).
 		Do().
 		Into(result)
+	log.Infof("KEYWORD: pkg/sdn/client/clientset_generated/release_v1_5/typed/core/v1/clusternetwork.go")
+	log d
 	return
 }
 

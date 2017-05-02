@@ -46,6 +46,7 @@ func StartMaster(networkConfig osconfigapi.MasterNetworkConfig, osClient *osclie
 	createConfig := false
 	updateConfig := false
 	cn, err := master.osClient.ClusterNetwork().Get(osapi.ClusterNetworkDefault)
+	log.Infof("KEYWORD: StartMaster:33")
 	if err == nil {
 		//if master.networkInfo.ClusterNetwork.String() != cn.Network ||
 		//	networkConfig.HostSubnetLength != cn.HostSubnetLength ||
@@ -64,13 +65,16 @@ func StartMaster(networkConfig osconfigapi.MasterNetworkConfig, osClient *osclie
 		if err = master.validateNetworkConfig(); err != nil {
 			return err
 		}
+		var cidrList []string
 		for _, cidr := range master.networkInfo.ClusterNetwork {
+			cidrList = append(cidrList, cidr.String())
 			size, len := cidr.Mask.Size()
 			if networkConfig.HostSubnetLength < 1 || networkConfig.HostSubnetLength >= uint32(len-size) {
 				return fmt.Errorf("invalid HostSubnetLength %d for network %s (must be from 1 to %d)", networkConfig.HostSubnetLength, cidr, len-size)
 			}
 		}
 		//cn.Network = master.networkInfo.ClusterNetwork.String()
+		cn.Network = cidrList
 		cn.HostSubnetLength = networkConfig.HostSubnetLength
 		cn.ServiceNetwork = master.networkInfo.ServiceNetwork.String()
 		cn.PluginName = networkConfig.NetworkPluginName
@@ -79,17 +83,19 @@ func StartMaster(networkConfig osconfigapi.MasterNetworkConfig, osClient *osclie
 	if createConfig {
 		cn, err := master.osClient.ClusterNetwork().Create(cn)
 		if err != nil {
+			log.Infof("KEYWORD: StartMaster: 83")
 			return err
 		}
 		log.Infof("Created ClusterNetwork %s", clusterNetworkToString(cn))
 	} else if updateConfig {
 		cn, err := master.osClient.ClusterNetwork().Update(cn)
 		if err != nil {
+			log.Infof("KEYWORD: StartMaster:90")
 			return err
 		}
 		log.Infof("Updated ClusterNetwork %s", clusterNetworkToString(cn))
 	}
-
+	log.Infof("KEYWORD: StartMaster:93")
 	if err = master.SubnetStartMaster(master.networkInfo.ClusterNetwork, networkConfig.HostSubnetLength); err != nil {
 		return err
 	}
