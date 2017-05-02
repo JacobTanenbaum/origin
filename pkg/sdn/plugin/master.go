@@ -74,7 +74,7 @@ func StartMaster(networkConfig osconfigapi.MasterNetworkConfig, osClient *osclie
 			}
 		}
 		//cn.Network = master.networkInfo.ClusterNetwork.String()
-		cn.Network = cidrList
+		cn.Network = networkConfig.ClusterNetworkCIDR
 		cn.HostSubnetLength = networkConfig.HostSubnetLength
 		cn.ServiceNetwork = master.networkInfo.ServiceNetwork.String()
 		cn.PluginName = networkConfig.NetworkPluginName

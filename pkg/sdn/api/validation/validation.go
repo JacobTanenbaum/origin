@@ -2,11 +2,13 @@ package validation
 
 import (
 	"fmt"
+	"strings"
 	"net"
 
 	"k8s.io/kubernetes/pkg/api/validation"
 	"k8s.io/kubernetes/pkg/api/validation/path"
 	"k8s.io/kubernetes/pkg/util/validation/field"
+//	log "github.com/golang/glog"
 
 	sdnapi "github.com/openshift/origin/pkg/sdn/api"
 	"github.com/openshift/origin/pkg/util/netutils"
@@ -16,62 +18,66 @@ import (
 func ValidateClusterNetwork(clusterNet *sdnapi.ClusterNetwork) field.ErrorList {
 	allErrs := validation.ValidateObjectMeta(&clusterNet.ObjectMeta, false, path.ValidatePathSegmentName, field.NewPath("metadata"))
 
-	clusterIPNet, err := netutils.ParseCIDRMask(clusterNet.Network)
-	if err != nil {
-		allErrs = append(allErrs, field.Invalid(field.NewPath("network"), clusterNet.Network, err.Error()))
-	} else {
-		ones, bitSize := clusterIPNet.Mask.Size()
-		if uint32(bitSize-ones) <= clusterNet.HostSubnetLength {
-			allErrs = append(allErrs, field.Invalid(field.NewPath("hostSubnetLength"), clusterNet.HostSubnetLength, "subnet length is greater than cluster Mask"))
-		}
-	}
-
 	serviceIPNet, err := netutils.ParseCIDRMask(clusterNet.ServiceNetwork)
 	if err != nil {
 		allErrs = append(allErrs, field.Invalid(field.NewPath("serviceNetwork"), clusterNet.ServiceNetwork, err.Error()))
 	}
+	//var clusterIPNetList []string
+	for _, clusterIP := range strings.Split(clusterNet.Network, ",") {
+		clusterIPNet, err := netutils.ParseCIDRMask(clusterIP)
+		if err != nil {
+			allErrs = append(allErrs, field.Invalid(field.NewPath("network"), clusterNet.Network, err.Error()))
+		} else {
+			ones, bitSize := clusterIPNet.Mask.Size()
+			if uint32(bitSize-ones) <= clusterNet.HostSubnetLength {
+				allErrs = append(allErrs, field.Invalid(field.NewPath("hostSubnetLength"), clusterNet.HostSubnetLength, "subnet length is greater than cluster Mask"))
+			}
+		}
 
-	if (clusterIPNet != nil) && (serviceIPNet != nil) && clusterIPNet.Contains(serviceIPNet.IP) {
-		allErrs = append(allErrs, field.Invalid(field.NewPath("serviceNetwork"), clusterNet.ServiceNetwork, "service network overlaps with cluster network"))
-	}
-	if (serviceIPNet != nil) && (clusterIPNet != nil) && serviceIPNet.Contains(clusterIPNet.IP) {
-		allErrs = append(allErrs, field.Invalid(field.NewPath("network"), clusterNet.Network, "cluster network overlaps with service network"))
-	}
 
+		if (clusterIPNet != nil) && (serviceIPNet != nil) && clusterIPNet.Contains(serviceIPNet.IP) {
+			allErrs = append(allErrs, field.Invalid(field.NewPath("serviceNetwork"), clusterNet.ServiceNetwork, "service network overlaps with cluster network"))
+		}
+		if (serviceIPNet != nil) && (clusterIPNet != nil) && serviceIPNet.Contains(clusterIPNet.IP) {
+			allErrs = append(allErrs, field.Invalid(field.NewPath("network"), clusterNet.Network, "cluster network overlaps with service network"))
+		}
+	}
 	return allErrs
 }
 
 func validateNewNetwork(obj *sdnapi.ClusterNetwork, old *sdnapi.ClusterNetwork) *field.Error {
-	oldNet, err := netutils.ParseCIDRMask(old.Network)
-	if err != nil {
-		// Shouldn't happen, but if the existing value is invalid, then any change should be an improvement...
-		return nil
-	}
-	oldSize, _ := oldNet.Mask.Size()
-	newNet, err := netutils.ParseCIDRMask(obj.Network)
-	if err != nil {
-		return field.Invalid(field.NewPath("network"), obj.Network, err.Error())
-	}
-	newSize, _ := newNet.Mask.Size()
+//	oldNet, err := netutils.ParseCIDRMask(old.Network)
+//	if err != nil {
+//		log.Infof("KEYWORD: should not happen")
+//		// Shouldn't happen, but if the existing value is invalid, then any change should be an improvement...
+//		return nil
+//	}
+//	oldSize, _ := oldNet.Mask.Size()
+//	newNet, err := netutils.ParseCIDRMask(obj.Network)
+//	if err != nil {
+//		return field.Invalid(field.NewPath("network"), obj.Network, err.Error())
+//	}
+//	newSize, _ := newNet.Mask.Size()
 	// oldSize/newSize is, eg the "16" in "10.1.0.0/16", so "newSize < oldSize" means
 	// the new network is larger
-	if newSize < oldSize && newNet.Contains(oldNet.IP) {
-		return nil
-	} else {
-		return field.Invalid(field.NewPath("network"), obj.Network, "cannot change the cluster's network CIDR to a value that does not include the existing network.")
-	}
+//	if newSize < oldSize && newNet.Contains(oldNet.IP) {
+//		return nil
+//	} else {
+//		return field.Invalid(field.NewPath("network"), obj.Network, "cannot change the cluster's network CIDR to a value that does not include the existing network.")
+//	}
+	return nil
 }
 
 func ValidateClusterNetworkUpdate(obj *sdnapi.ClusterNetwork, old *sdnapi.ClusterNetwork) field.ErrorList {
 	allErrs := validation.ValidateObjectMetaUpdate(&obj.ObjectMeta, &old.ObjectMeta, field.NewPath("metadata"))
 	allErrs = append(allErrs, ValidateClusterNetwork(obj)...)
 
-	if obj.Network != old.Network {
-		err := validateNewNetwork(obj, old)
-		if err != nil {
-			allErrs = append(allErrs, err)
-		}
-	}
+//	if obj.Network != old.Network {
+//		err := validateNewNetwork(obj, old)
+//		if err != nil {
+//			allErrs = append(allErrs, err)
+//		}
+//	}
 	if obj.HostSubnetLength != old.HostSubnetLength {
 		allErrs = append(allErrs, field.Invalid(field.NewPath("hostSubnetLength"), obj.HostSubnetLength, "cannot change the cluster's hostSubnetLength midflight."))
 	}
