@@ -33,6 +33,7 @@ func (plugin *OsdnNode) getLocalSubnet() (string, error) {
 	err := utilwait.ExponentialBackoff(backoff, func() (bool, error) {
 		var err error
 		subnet, err = plugin.osClient.HostSubnets().Get(plugin.hostName)
+		glog.Infof("KEYWORD: plugin.hostName - %s", plugin.hostName)
 		if err == nil {
 			return true, nil
 		} else if kapierrors.IsNotFound(err) {

@@ -89,24 +89,29 @@ func (master *OsdnMaster) addNode(nodeName string, nodeIP string, hsAnnotations 
 		sn, err := possibleSubnet.GetNetwork()
 		if err != nil {
 			log.Infof("error allocating network for node %s: %v", nodeName, err)
-			break
-		}
+		} else {
+			if sn == nil {
+				log.Infof("KEYWORD: WHYYYYY")
+			}
+			log.Infof("KEYWORD: FOUND A SUBNET")
+			log.Infof("KEYWORD: THIS IS A SUBNET - %s", sn.String())
+			log.Infof("KEYWORD: HUH?")
 
-		sub = &osapi.HostSubnet{
-			TypeMeta:   kapiunversioned.TypeMeta{Kind: "HostSubnet"},
-			ObjectMeta: kapi.ObjectMeta{Name: nodeName, Annotations: hsAnnotations},
-			Host:       nodeName,
-			HostIP:     nodeIP,
-			Subnet:     sn.String(),
+			sub = &osapi.HostSubnet{
+				TypeMeta:   kapiunversioned.TypeMeta{Kind: "HostSubnet"},
+				ObjectMeta: kapi.ObjectMeta{Name: nodeName, Annotations: hsAnnotations},
+				Host:       nodeName,
+				HostIP:     nodeIP,
+				Subnet:     sn.String(),
+			}
+			sub, err = master.osClient.HostSubnets().Create(sub)
+			if err != nil {
+				possibleSubnet.ReleaseNetwork(sn)
+				log.Infof("error creating subnet %s for node %s: %v", sn.String(), nodeName, err)
+			}
+			log.Infof("Created HostSubnet %s", hostSubnetToString(sub))
+			return nodeIP, nil
 		}
-		sub, err = master.osClient.HostSubnets().Create(sub)
-		if err != nil {
-			possibleSubnet.ReleaseNetwork(sn)
-			log.Infof("error creating subnet %s for node %s: %v", sn.String(), nodeName, err)
-			break
-		}
-		log.Infof("Created HostSubnet %s", hostSubnetToString(sub))
-		return nodeIP, nil
 	}
 	return "", fmt.Errorf("error allocating new node stuff")
 }

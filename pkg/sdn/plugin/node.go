@@ -216,8 +216,11 @@ func (node *OsdnNode) Start() error {
 		return fmt.Errorf("failed to set up iptables: %v", err)
 	}
 
+	log.Infof("KEYWORD: BEFORE getLocalSubnet")
 	node.localSubnetCIDR, err = node.getLocalSubnet()
+	log.Infof("KEYWORD:AFTER getLocalSubnet")
 	if err != nil {
+		log.Infof("Error from getLocalSubnet")
 		return err
 	}
 
