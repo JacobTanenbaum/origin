@@ -188,6 +188,16 @@ func (args MasterArgs) BuildSerializeableMasterConfig() (*configapi.MasterConfig
 
 	dnsServingInfo := servingInfoForAddr(&dnsBindAddr)
 
+
+	var clusterNetworkConfig []configapi.ClusterNetworkEntry
+
+	for _, cidr := range args.NetworkArgs.ClusterNetworkConfig {
+		clusterNetworkEntry := configapi.ClusterNetworkEntry{
+					ClusterNetworkCIDR: cidr.ClusterNetworkCIDR,
+					}
+		clusterNetworkConfig = append(clusterNetworkConfig, clusterNetworkEntry)
+	}
+
 	config := &configapi.MasterConfig{
 		ServingInfo: configapi.HTTPServingInfo{
 			ServingInfo: listenServingInfo,
@@ -265,6 +275,12 @@ func (args MasterArgs) BuildSerializeableMasterConfig() (*configapi.MasterConfig
 		NetworkConfig: configapi.MasterNetworkConfig{
 			NetworkPluginName:  args.NetworkArgs.NetworkPluginName,
 			ClusterNetworkCIDR: args.NetworkArgs.ClusterNetworkCIDR,
+	//		ClusterNetworkConfig: []configapi.ClusterNetworkEntry{
+	//			configapi.ClusterNetworkEntry{
+	//				ClusterNetworkCIDR: "DEFAULT",
+	//			},
+	//		},
+			ClusterNetworkConfig: clusterNetworkConfig,
 			HostSubnetLength:   args.NetworkArgs.HostSubnetLength,
 			ServiceNetworkCIDR: args.NetworkArgs.ServiceNetworkCIDR,
 		},

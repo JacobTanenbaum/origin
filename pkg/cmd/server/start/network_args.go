@@ -11,11 +11,18 @@ type NetworkArgs struct {
 	// ClusterNetworkCIDR is the CIDR string representing the network that all containers
 	// should belong to.
 	ClusterNetworkCIDR string
+	// PLACEHOLDER
+	ClusterNetworkConfig []ClusterNetworkEntry
 	// HostSubnetLength is the length of subnet each host is given from the network-cidr.
 	HostSubnetLength uint32
 	// ServiceNetworkCIDR is the CIDR string representing the network that service IP
 	// addresses will be allocated from
 	ServiceNetworkCIDR string
+}
+
+//PLACEHOLDER
+type ClusterNetworkEntry struct {
+	ClusterNetworkCIDR string
 }
 
 // BindNetworkArgs binds values to the given arguments by using flags
@@ -31,6 +38,12 @@ func NewDefaultNetworkArgs() *NetworkArgs {
 	config := &NetworkArgs{
 		NetworkPluginName:  "",
 		ClusterNetworkCIDR: "10.128.0.0/14",
+		ClusterNetworkConfig:	[]ClusterNetworkEntry{
+						ClusterNetworkEntry{
+							ClusterNetworkCIDR: "10.128.0.0/14",
+						},
+					},
+
 		HostSubnetLength:   9,
 		ServiceNetworkCIDR: "172.30.0.0/16",
 	}
