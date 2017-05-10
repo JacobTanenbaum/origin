@@ -10,6 +10,7 @@ import (
 
 	osclient "github.com/openshift/origin/pkg/client"
 	osapi "github.com/openshift/origin/pkg/sdn/api"
+	osconfigapi "github.com/openshift/origin/pkg/cmd/server/api"
 	"github.com/openshift/origin/pkg/util/netutils"
 
 	kapi "k8s.io/kubernetes/pkg/api"
@@ -49,11 +50,20 @@ type NetworkInfo struct {
 }
 
 
-func parseNetworkInfo(clusterNetwork string, serviceNetwork string) (*NetworkInfo, error) {
-	cn, err := netutils.ParseCIDRListMask(clusterNetwork)
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse ClusterNetwork CIDRs %s: %v", clusterNetwork, err)
+func parseNetworkInfo(clusterNetworkConfig []osconfigapi.ClusterNetworkEntry, serviceNetwork string) (*NetworkInfo, error) {
+	var cn []*net.IPNet
+
+	for _, cidr := range clusterNetworkConfig {
+		ipNet, err := netutils.ParseCIDRMask(cidr.ClusterNetworkCIDR)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse ClusterNetwork CIDR %s: %v", cidr.ClusterNetworkCIDR, err)
+		}
+		cn = append(cn, ipNet)
 	}
+//	cn, err := netutils.ParseCIDRListMask(ClusterNetworkConfig)
+//	if err != nil {
+//		return nil, fmt.Errorf("failed to parse ClusterNetwork CIDRs %s: %v", clusterNetwork, err)
+//	}
 	//cn, err := netutils.ParseCIDRMask(clusterNetwork)
 	//if err != nil {
 	//	_, cn, err := net.ParseCIDR(clusterNetwork)

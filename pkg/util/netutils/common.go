@@ -4,7 +4,7 @@ import (
 	"encoding/binary"
 	"fmt"
 	"net"
-	"strings"
+//	"strings"
 
 	"github.com/golang/glog"
 	kerrors "k8s.io/kubernetes/pkg/util/errors"
@@ -115,14 +115,21 @@ func ParseCIDRMask(cidr string) (*net.IPNet, error) {
 	return net, nil
 }
 
-func ParseCIDRListMask(cidrList string) ([]*net.IPNet, error) {
-	var cn []*net.IPNet
-	for _, cidr := range strings.Split(cidrList, ",") {
-		net, err := ParseCIDRMask(cidr)
-		if err != nil {
-			return nil, err
-		}
-		cn = append(cn, net)
-	}
-	return cn, nil
-}
+//func ParseCIDRListMask(clusterNetworkConfig []osapi.ClusterNetworkEntry) ([]*net.IPNet, error) {
+//	var cn []*net.IPNet
+//	for _, cidr := range clusterNetworkConfig {
+//		net, err := ParseCIDRMask(cidr.ClusterNetworkCIDR)
+//		if err != nil {
+//			return nil, err
+//		}
+//		cn = append(cn, net)
+//	}
+//	for _, cidr := range strings.Split(cidrList, ",") {
+//		net, err := ParseCIDRMask(cidr)
+//		if err != nil {
+//			return nil, err
+//		}
+//		cn = append(cn, net)
+//	}
+//	return cn, nil
+//}
