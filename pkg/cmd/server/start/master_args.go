@@ -2,6 +2,7 @@ package start
 
 import (
 	"fmt"
+	"strings"
 	"net"
 	"net/url"
 	"path"
@@ -191,12 +192,19 @@ func (args MasterArgs) BuildSerializeableMasterConfig() (*configapi.MasterConfig
 
 	var clusterNetworkConfig []configapi.ClusterNetworkEntry
 
-	for _, cidr := range args.NetworkArgs.ClusterNetworkConfig {
+	for _, cidr := range strings.Split(args.NetworkArgs.ClusterNetworkCIDR, ",") {
 		clusterNetworkEntry := configapi.ClusterNetworkEntry{
-					ClusterNetworkCIDR: cidr.ClusterNetworkCIDR,
+					ClusterNetworkCIDR: cidr,
 					}
 		clusterNetworkConfig = append(clusterNetworkConfig, clusterNetworkEntry)
 	}
+
+//	for _, cidr := range args.NetworkArgs.ClusterNetworkConfig {
+//		clusterNetworkEntry := configapi.ClusterNetworkEntry{
+//					ClusterNetworkCIDR: cidr.ClusterNetworkCIDR,
+//					}
+//		clusterNetworkConfig = append(clusterNetworkConfig, clusterNetworkEntry)
+//	}
 
 	config := &configapi.MasterConfig{
 		ServingInfo: configapi.HTTPServingInfo{
