@@ -21,7 +21,7 @@ type ClusterNetwork struct {
 	// Network is a CIDR string specifying the global overlay network's L3 space
 	Network string `json:"network" protobuf:"bytes,2,opt,name=network"`
 	// PLACEHOLDER
-	ClusterDef []ClusterNetworkEntry `json:"clusterDef"`
+	ClusterDef []ClusterNetworkEntry `json:"clusterDef" protobuf:"bytes,6,rep,name=clusterDef"`
 	// HostSubnetLength is the number of bits of network to allocate to each node. eg, 8 would mean that each node would have a /24 slice of the overlay network for its pods
 	HostSubnetLength uint32 `json:"hostsubnetlength" protobuf:"varint,3,opt,name=hostsubnetlength"`
 	// ServiceNetwork is the CIDR range that Service IP addresses are allocated from
@@ -32,7 +32,7 @@ type ClusterNetwork struct {
 
 // PLACEHOLDER
 type ClusterNetworkEntry struct {
-	ClusterNetworkCIDR string `json:"clusterNetworkCIDR"`
+	ClusterNetworkCIDR string `json:"clusterNetworkCIDR" protobuf:"bytes,1,opt,name=clusterNetworkCIDR"`
 }
 
 // ClusterNetworkList is a collection of ClusterNetworks

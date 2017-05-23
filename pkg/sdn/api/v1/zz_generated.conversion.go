@@ -22,6 +22,8 @@ func RegisterConversions(scheme *runtime.Scheme) error {
 	return scheme.AddGeneratedConversionFuncs(
 		Convert_v1_ClusterNetwork_To_api_ClusterNetwork,
 		Convert_api_ClusterNetwork_To_v1_ClusterNetwork,
+		Convert_v1_ClusterNetworkEntry_To_api_ClusterNetworkEntry,
+		Convert_api_ClusterNetworkEntry_To_v1_ClusterNetworkEntry,
 		Convert_v1_ClusterNetworkList_To_api_ClusterNetworkList,
 		Convert_api_ClusterNetworkList_To_v1_ClusterNetworkList,
 		Convert_v1_EgressNetworkPolicy_To_api_EgressNetworkPolicy,
@@ -50,6 +52,7 @@ func autoConvert_v1_ClusterNetwork_To_api_ClusterNetwork(in *ClusterNetwork, out
 		return err
 	}
 	out.Network = in.Network
+	out.ClusterDef = *(*[]api.ClusterNetworkEntry)(unsafe.Pointer(&in.ClusterDef))
 	out.HostSubnetLength = in.HostSubnetLength
 	out.ServiceNetwork = in.ServiceNetwork
 	out.PluginName = in.PluginName
@@ -65,6 +68,7 @@ func autoConvert_api_ClusterNetwork_To_v1_ClusterNetwork(in *api.ClusterNetwork,
 		return err
 	}
 	out.Network = in.Network
+	out.ClusterDef = *(*[]ClusterNetworkEntry)(unsafe.Pointer(&in.ClusterDef))
 	out.HostSubnetLength = in.HostSubnetLength
 	out.ServiceNetwork = in.ServiceNetwork
 	out.PluginName = in.PluginName
@@ -73,6 +77,24 @@ func autoConvert_api_ClusterNetwork_To_v1_ClusterNetwork(in *api.ClusterNetwork,
 
 func Convert_api_ClusterNetwork_To_v1_ClusterNetwork(in *api.ClusterNetwork, out *ClusterNetwork, s conversion.Scope) error {
 	return autoConvert_api_ClusterNetwork_To_v1_ClusterNetwork(in, out, s)
+}
+
+func autoConvert_v1_ClusterNetworkEntry_To_api_ClusterNetworkEntry(in *ClusterNetworkEntry, out *api.ClusterNetworkEntry, s conversion.Scope) error {
+	out.ClusterNetworkCIDR = in.ClusterNetworkCIDR
+	return nil
+}
+
+func Convert_v1_ClusterNetworkEntry_To_api_ClusterNetworkEntry(in *ClusterNetworkEntry, out *api.ClusterNetworkEntry, s conversion.Scope) error {
+	return autoConvert_v1_ClusterNetworkEntry_To_api_ClusterNetworkEntry(in, out, s)
+}
+
+func autoConvert_api_ClusterNetworkEntry_To_v1_ClusterNetworkEntry(in *api.ClusterNetworkEntry, out *ClusterNetworkEntry, s conversion.Scope) error {
+	out.ClusterNetworkCIDR = in.ClusterNetworkCIDR
+	return nil
+}
+
+func Convert_api_ClusterNetworkEntry_To_v1_ClusterNetworkEntry(in *api.ClusterNetworkEntry, out *ClusterNetworkEntry, s conversion.Scope) error {
+	return autoConvert_api_ClusterNetworkEntry_To_v1_ClusterNetworkEntry(in, out, s)
 }
 
 func autoConvert_v1_ClusterNetworkList_To_api_ClusterNetworkList(in *ClusterNetworkList, out *api.ClusterNetworkList, s conversion.Scope) error {
