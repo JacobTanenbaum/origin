@@ -55,6 +55,8 @@ func StartMaster(networkConfig osconfigapi.MasterNetworkConfig, osClient *osclie
 			updateConfig = true
 		//}
 	} else {
+
+
 		cn = &osapi.ClusterNetwork{
 			TypeMeta:   kapiunversioned.TypeMeta{Kind: "ClusterNetwork"},
 			ObjectMeta: kapi.ObjectMeta{Name: osapi.ClusterNetworkDefault},
@@ -66,15 +68,24 @@ func StartMaster(networkConfig osconfigapi.MasterNetworkConfig, osClient *osclie
 			return err
 		}
 		var cidrList []string
+		var clusterNetworkEntry []osapi.ClusterNetworkEntry
+
 		for _, cidr := range master.networkInfo.ClusterNetwork {
+			clusterNetworkEntry = append(clusterNetworkEntry, osapi.ClusterNetworkEntry{ClusterNetworkCIDR: cidr.String()})
 			cidrList = append(cidrList, cidr.String())
 			size, len := cidr.Mask.Size()
 			if networkConfig.HostSubnetLength < 1 || networkConfig.HostSubnetLength >= uint32(len-size) {
 				return fmt.Errorf("invalid HostSubnetLength %d for network %s (must be from 1 to %d)", networkConfig.HostSubnetLength, cidr, len-size)
 			}
 		}
+
 		//cn.Network = master.networkInfo.ClusterNetwork.String()
 		cn.Network = networkConfig.ClusterNetworkCIDR
+
+		log.Info("KEYWORD SETTING CLUSTERNETWORKDEF")
+		log.Info("%s", clusterNetworkEntry)
+
+		cn.ClusterDef = clusterNetworkEntry
 		cn.HostSubnetLength = networkConfig.HostSubnetLength
 		cn.ServiceNetwork = master.networkInfo.ServiceNetwork.String()
 		cn.PluginName = networkConfig.NetworkPluginName

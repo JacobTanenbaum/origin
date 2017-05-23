@@ -15,11 +15,15 @@ const (
 type ClusterNetwork struct {
 	unversioned.TypeMeta
 	kapi.ObjectMeta
-
 	Network          string
+	ClusterDef []ClusterNetworkEntry
 	HostSubnetLength uint32
 	ServiceNetwork   string
 	PluginName       string
+}
+
+type ClusterNetworkEntry struct {
+	ClusterNetworkCIDR string
 }
 
 type ClusterNetworkList struct {
