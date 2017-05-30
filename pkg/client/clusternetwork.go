@@ -40,7 +40,9 @@ func (c *clusterNetwork) Get(networkName string) (result *sdnapi.ClusterNetwork,
 func (c *clusterNetwork) Create(cn *sdnapi.ClusterNetwork) (result *sdnapi.ClusterNetwork, err error) {
 	result = &sdnapi.ClusterNetwork{}
 	err = c.r.Post().Resource("clusterNetworks").Body(cn).Do().Into(result)
-	log.Infof("KEYWORD:pkg/client/clusternetwork.go") 
+	log.Infof("KEYWORD:pkg/client/clusternetwork.go")
+	log.Infof("KEYWORD: cn:%s", cn.ClusterDef)
+	log.Infof("KEYWORD: result:%s", result.ClusterDef)
 	return
 }
 

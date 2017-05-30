@@ -2,7 +2,7 @@ package validation
 
 import (
 	"fmt"
-	"strings"
+//	"strings"
 	"net"
 
 	"k8s.io/kubernetes/pkg/api/validation"
@@ -23,8 +23,9 @@ func ValidateClusterNetwork(clusterNet *sdnapi.ClusterNetwork) field.ErrorList {
 		allErrs = append(allErrs, field.Invalid(field.NewPath("serviceNetwork"), clusterNet.ServiceNetwork, err.Error()))
 	}
 	//var clusterIPNetList []string
-	for _, clusterIP := range strings.Split(clusterNet.Network, ",") {
-		clusterIPNet, err := netutils.ParseCIDRMask(clusterIP)
+//	for _, clusterIP := range strings.Split(clusterNet.Network, ",") {
+	for _, clusterIP := range clusterNet.ClusterDef {
+		clusterIPNet, err := netutils.ParseCIDRMask(clusterIP.ClusterNetworkCIDR)
 		if err != nil {
 			allErrs = append(allErrs, field.Invalid(field.NewPath("network"), clusterNet.Network, err.Error()))
 		} else {
