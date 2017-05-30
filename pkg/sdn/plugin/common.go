@@ -10,6 +10,7 @@ import (
 
 	osclient "github.com/openshift/origin/pkg/client"
 	osapi "github.com/openshift/origin/pkg/sdn/api"
+	osconfigapi "github.com/openshift/origin/pkg/cmd/server/api"
 	"github.com/openshift/origin/pkg/util/netutils"
 
 	kapi "k8s.io/kubernetes/pkg/api"
@@ -43,16 +44,44 @@ func cidrListContains(cidrList []*net.IPNet, ipaddr net.IP)(*net.IPNet, bool) {
 	return nil, false
 }
 
+func convertToSDNClusterNetworkEntries(clusterNetworkEntry []osconfigapi.ClusterNetworkEntry) []osapi.ClusterNetworkEntry {
+	var sdnClusterNetworkEntries []osapi.ClusterNetworkEntry
+
+	for _, entry := range clusterNetworkEntry {
+		sdnClusterNetworkEntries = append(sdnClusterNetworkEntries, osapi.ClusterNetworkEntry{ClusterNetworkCIDR: entry.ClusterNetworkCIDR})
+	}
+	return sdnClusterNetworkEntries
+}
+
 type NetworkInfo struct {
 	ClusterNetwork []*net.IPNet
 	ServiceNetwork *net.IPNet
 }
 
 
-func parseNetworkInfo(clusterNetwork string, serviceNetwork string) (*NetworkInfo, error) {
-	cn, err := netutils.ParseCIDRListMask(clusterNetwork)
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse ClusterNetwork CIDRs %s: %v", clusterNetwork, err)
+//func parseNetworkInfo(clusterNetwork string, serviceNetwork string) (*NetworkInfo, error) {
+func parseNetworkInfo(clusterNetwork []osapi.ClusterNetworkEntry, serviceNetwork string) (*NetworkInfo, error) {
+	//cn, err := netutils.ParseCIDRListMask(clusterNetwork)
+//	cn, err := netutils.ParseNetworkEntriesCIDRMask(clusterNetwork)
+	//var cn []*net.IPNet
+	//for _, entry := range clusterNetwork {
+	//	net, err := netutils.ParseCIDRMask(entry.ClusterNetworkCIDR)
+	//	if err != nil {
+	//		return nil, fmt.Errorf("failed to parse ClusterNetwork CIDRs %s: %v", clusterNetwork, err)
+	//	}
+	//	cn = append(cn, net)
+	//}
+	var cn []*net.IPNet
+	for _, entry := range clusterNetwork {
+		clusterCIDR, err := netutils.ParseCIDRMask(entry.ClusterNetworkCIDR)
+		if err != nil {
+			_, clusterCIDR, err := net.ParseCIDR(entry.ClusterNetworkCIDR)
+			if err != nil {
+				return nil, fmt.Errorf("failed to parse ClusterNetwork CIDR %s: %v", entry.ClusterNetworkCIDR, err)
+			}
+			glog.Errorf("Configured clusterNetworkCIDR value %q is invalid; treating it as %q", entry.ClusterNetworkCIDR, clusterCIDR.String())
+		}
+		cn = append(cn, clusterCIDR)
 	}
 	//cn, err := netutils.ParseCIDRMask(clusterNetwork)
 	//if err != nil {
@@ -108,7 +137,7 @@ func getNetworkInfo(osClient *osclient.Client) (*NetworkInfo, error) {
 		return nil, err
 	}
 
-	return parseNetworkInfo(cn.Network, cn.ServiceNetwork)
+	return parseNetworkInfo(cn.ClusterDef, cn.ServiceNetwork)
 }
 
 type ResourceName string

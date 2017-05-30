@@ -282,7 +282,7 @@ func (args MasterArgs) BuildSerializeableMasterConfig() (*configapi.MasterConfig
 
 		NetworkConfig: configapi.MasterNetworkConfig{
 			NetworkPluginName:  args.NetworkArgs.NetworkPluginName,
-			ClusterNetworkCIDR: args.NetworkArgs.ClusterNetworkCIDR,
+			//ClusterNetworkCIDR: args.NetworkArgs.ClusterNetworkCIDR,
 	//		ClusterNetworkConfig: []configapi.ClusterNetworkEntry{
 	//			configapi.ClusterNetworkEntry{
 	//				ClusterNetworkCIDR: "DEFAULT",

@@ -38,7 +38,8 @@ func StartMaster(networkConfig osconfigapi.MasterNetworkConfig, osClient *osclie
 	}
 
 	var err error
-	master.networkInfo, err = parseNetworkInfo(networkConfig.ClusterNetworkCIDR, networkConfig.ServiceNetworkCIDR)
+	sdnClusterNetworkEntries := convertToSDNClusterNetworkEntries(networkConfig.ClusterNetworkConfig)
+	master.networkInfo, err = parseNetworkInfo(sdnClusterNetworkEntries, networkConfig.ServiceNetworkCIDR)
 	if err != nil {
 		return err
 	}

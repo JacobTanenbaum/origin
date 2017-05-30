@@ -38,12 +38,11 @@ func NewDefaultNetworkArgs() *NetworkArgs {
 	config := &NetworkArgs{
 		NetworkPluginName:  "",
 		ClusterNetworkCIDR: "10.128.0.0/14",
-		ClusterNetworkConfig:	[]ClusterNetworkEntry{
-						ClusterNetworkEntry{
-							ClusterNetworkCIDR: "10.128.0.0/14",
-						},
-					},
-
+//		ClusterNetworkConfig:	[]ClusterNetworkEntry{
+//						ClusterNetworkEntry{
+//							ClusterNetworkCIDR: "10.128.0.1/14",
+//						},
+//					},
 		HostSubnetLength:   9,
 		ServiceNetworkCIDR: "172.30.0.0/16",
 	}
