@@ -20,6 +20,7 @@ func init() {
 func RegisterDeepCopies(scheme *runtime.Scheme) error {
 	return scheme.AddGeneratedDeepCopyFuncs(
 		conversion.GeneratedDeepCopyFunc{Fn: DeepCopy_api_ClusterNetwork, InType: reflect.TypeOf(&ClusterNetwork{})},
+		conversion.GeneratedDeepCopyFunc{Fn: DeepCopy_api_ClusterNetworkEntry, InType: reflect.TypeOf(&ClusterNetworkEntry{})},
 		conversion.GeneratedDeepCopyFunc{Fn: DeepCopy_api_ClusterNetworkList, InType: reflect.TypeOf(&ClusterNetworkList{})},
 		conversion.GeneratedDeepCopyFunc{Fn: DeepCopy_api_EgressNetworkPolicy, InType: reflect.TypeOf(&EgressNetworkPolicy{})},
 		conversion.GeneratedDeepCopyFunc{Fn: DeepCopy_api_EgressNetworkPolicyList, InType: reflect.TypeOf(&EgressNetworkPolicyList{})},
@@ -42,9 +43,27 @@ func DeepCopy_api_ClusterNetwork(in interface{}, out interface{}, c *conversion.
 			return err
 		}
 		out.Network = in.Network
+		if in.ClusterDef != nil {
+			in, out := &in.ClusterDef, &out.ClusterDef
+			*out = make([]ClusterNetworkEntry, len(*in))
+			for i := range *in {
+				(*out)[i] = (*in)[i]
+			}
+		} else {
+			out.ClusterDef = nil
+		}
 		out.HostSubnetLength = in.HostSubnetLength
 		out.ServiceNetwork = in.ServiceNetwork
 		out.PluginName = in.PluginName
+		return nil
+	}
+}
+
+func DeepCopy_api_ClusterNetworkEntry(in interface{}, out interface{}, c *conversion.Cloner) error {
+	{
+		in := in.(*ClusterNetworkEntry)
+		out := out.(*ClusterNetworkEntry)
+		out.ClusterNetworkCIDR = in.ClusterNetworkCIDR
 		return nil
 	}
 }

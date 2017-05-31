@@ -23,6 +23,9 @@ message ClusterNetwork {
   // Network is a CIDR string specifying the global overlay network's L3 space
   optional string network = 2;
 
+  // PLACEHOLDER
+  repeated ClusterNetworkEntry clusterDef = 6;
+
   // HostSubnetLength is the number of bits of network to allocate to each node. eg, 8 would mean that each node would have a /24 slice of the overlay network for its pods
   optional uint32 hostsubnetlength = 3;
 
@@ -31,6 +34,11 @@ message ClusterNetwork {
 
   // PluginName is the name of the network plugin being used
   optional string pluginName = 5;
+}
+
+// PLACEHOLDER
+message ClusterNetworkEntry {
+  optional string clusterNetworkCIDR = 1;
 }
 
 // ClusterNetworkList is a collection of ClusterNetworks

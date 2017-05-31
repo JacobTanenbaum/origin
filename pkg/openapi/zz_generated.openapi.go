@@ -8976,6 +8976,19 @@ var OpenAPIDefinitions *common.OpenAPIDefinitions = &common.OpenAPIDefinitions{
 							Format:      "",
 						},
 					},
+					"clusterDef": {
+						SchemaProps: spec.SchemaProps{
+							Description: "PLACEHOLDER",
+							Type:        []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Ref: spec.MustCreateRef("#/definitions/v1.ClusterNetworkEntry"),
+									},
+								},
+							},
+						},
+					},
 					"hostsubnetlength": {
 						SchemaProps: spec.SchemaProps{
 							Description: "HostSubnetLength is the number of bits of network to allocate to each node. eg, 8 would mean that each node would have a /24 slice of the overlay network for its pods",
@@ -8998,11 +9011,28 @@ var OpenAPIDefinitions *common.OpenAPIDefinitions = &common.OpenAPIDefinitions{
 						},
 					},
 				},
-				Required: []string{"network", "hostsubnetlength", "serviceNetwork"},
+				Required: []string{"network", "clusterDef", "hostsubnetlength", "serviceNetwork"},
 			},
 		},
 		Dependencies: []string{
-			"v1.ObjectMeta"},
+			"v1.ClusterNetworkEntry", "v1.ObjectMeta"},
+	},
+	"v1.ClusterNetworkEntry": {
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Description: "PLACEHOLDER",
+				Properties: map[string]spec.Schema{
+					"clusterNetworkCIDR": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
+				},
+				Required: []string{"clusterNetworkCIDR"},
+			},
+		},
+		Dependencies: []string{},
 	},
 	"v1.ClusterNetworkList": {
 		Schema: spec.Schema{
