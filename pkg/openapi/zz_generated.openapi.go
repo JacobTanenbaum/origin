@@ -8297,6 +8297,19 @@ func GetOpenAPIDefinitions(ref openapi.ReferenceCallback) map[string]openapi.Ope
 								Format:      "",
 							},
 						},
+						"clusterDef": {
+							SchemaProps: spec.SchemaProps{
+								Description: "PLACEHOLDER",
+								Type:        []string{"array"},
+								Items: &spec.SchemaOrArray{
+									Schema: &spec.Schema{
+										SchemaProps: spec.SchemaProps{
+											Ref: ref("github.com/openshift/origin/pkg/sdn/api/v1.ClusterNetworkEntry"),
+										},
+									},
+								},
+							},
+						},
 						"hostsubnetlength": {
 							SchemaProps: spec.SchemaProps{
 								Description: "HostSubnetLength is the number of bits of network to allocate to each node. eg, 8 would mean that each node would have a /24 slice of the overlay network for its pods",
@@ -8319,11 +8332,28 @@ func GetOpenAPIDefinitions(ref openapi.ReferenceCallback) map[string]openapi.Ope
 							},
 						},
 					},
-					Required: []string{"network", "hostsubnetlength", "serviceNetwork"},
+					Required: []string{"network", "clusterDef", "hostsubnetlength", "serviceNetwork"},
 				},
 			},
 			Dependencies: []string{
-				"k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"},
+				"github.com/openshift/origin/pkg/sdn/api/v1.ClusterNetworkEntry", "k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"},
+		},
+		"github.com/openshift/origin/pkg/sdn/api/v1.ClusterNetworkEntry": {
+			Schema: spec.Schema{
+				SchemaProps: spec.SchemaProps{
+					Description: "PLACEHOLDER",
+					Properties: map[string]spec.Schema{
+						"clusterNetworkCIDR": {
+							SchemaProps: spec.SchemaProps{
+								Type:   []string{"string"},
+								Format: "",
+							},
+						},
+					},
+					Required: []string{"clusterNetworkCIDR"},
+				},
+			},
+			Dependencies: []string{},
 		},
 		"github.com/openshift/origin/pkg/sdn/api/v1.ClusterNetworkList": {
 			Schema: spec.Schema{

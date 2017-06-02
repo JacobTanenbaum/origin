@@ -24701,6 +24701,7 @@
     "description": "ClusterNetwork describes the cluster network. There is normally only one object of this type, named \"default\", which is created by the SDN network plugin based on the master configuration when the cluster is brought up for the first time.",
     "required": [
      "network",
+     "clusterDef",
      "hostsubnetlength",
      "serviceNetwork"
     ],
@@ -24721,6 +24722,12 @@
       "type": "string",
       "description": "Network is a CIDR string specifying the global overlay network's L3 space"
      },
+     "clusterDef": {
+      "type": "array",
+      "items": {
+       "$ref": "v1.ClusterNetworkEntry"
+      }
+     },
      "hostsubnetlength": {
       "type": "integer",
       "description": "HostSubnetLength is the number of bits of network to allocate to each node. eg, 8 would mean that each node would have a /24 slice of the overlay network for its pods"
@@ -24732,6 +24739,17 @@
      "pluginName": {
       "type": "string",
       "description": "PluginName is the name of the network plugin being used"
+     }
+    }
+   },
+   "v1.ClusterNetworkEntry": {
+    "id": "v1.ClusterNetworkEntry",
+    "required": [
+     "clusterNetworkCIDR"
+    ],
+    "properties": {
+     "clusterNetworkCIDR": {
+      "type": "string"
      }
     }
    },
