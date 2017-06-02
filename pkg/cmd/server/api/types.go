@@ -612,6 +612,7 @@ type UserAgentDenyRule struct {
 type MasterNetworkConfig struct {
 	NetworkPluginName  string
 	ClusterNetworkCIDR string
+	ClusterNetworkConfig []ClusterNetworkEntry
 	HostSubnetLength   uint32
 	ServiceNetworkCIDR string
 	// ExternalIPNetworkCIDRs controls what values are acceptable for the service external IP field. If empty, no externalIP
@@ -624,6 +625,10 @@ type MasterNetworkConfig struct {
 	// For security reasons, you should ensure that this range does not overlap with the CIDRs reserved for external ips,
 	// nodes, pods, or services.
 	IngressIPNetworkCIDR string
+}
+
+type ClusterNetworkEntry struct {
+	ClusterNetworkCIDR string
 }
 
 type ImageConfig struct {

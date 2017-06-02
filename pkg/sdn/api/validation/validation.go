@@ -24,28 +24,30 @@ func SetDefaultClusterNetwork(cn sdnapi.ClusterNetwork) {
 func ValidateClusterNetwork(clusterNet *sdnapi.ClusterNetwork) field.ErrorList {
 	allErrs := validation.ValidateObjectMeta(&clusterNet.ObjectMeta, false, path.ValidatePathSegmentName, field.NewPath("metadata"))
 
-	clusterIPNet, err := netutils.ParseCIDRMask(clusterNet.Network)
-	if err != nil {
-		allErrs = append(allErrs, field.Invalid(field.NewPath("network"), clusterNet.Network, err.Error()))
-	} else {
-		maskLen, addrLen := clusterIPNet.Mask.Size()
-		if clusterNet.HostSubnetLength > uint32(addrLen-maskLen) {
-			allErrs = append(allErrs, field.Invalid(field.NewPath("hostSubnetLength"), clusterNet.HostSubnetLength, "subnet length is too large for clusterNetwork"))
-		} else if clusterNet.HostSubnetLength < 2 {
-			allErrs = append(allErrs, field.Invalid(field.NewPath("hostSubnetLength"), clusterNet.HostSubnetLength, "subnet length must be at least 2"))
+	for _, cidr := range clusterNet.ClusterDef{
+		clusterIPNet, err := netutils.ParseCIDRMask(cidr.ClusterNetworkCIDR)
+		if err != nil {
+			allErrs = append(allErrs, field.Invalid(field.NewPath("network"), clusterNet.Network, err.Error()))
+		} else {
+			maskLen, addrLen := clusterIPNet.Mask.Size()
+			if clusterNet.HostSubnetLength > uint32(addrLen-maskLen) {
+				allErrs = append(allErrs, field.Invalid(field.NewPath("hostSubnetLength"), clusterNet.HostSubnetLength, "subnet length is too large for clusterNetwork"))
+			} else if clusterNet.HostSubnetLength < 2 {
+				allErrs = append(allErrs, field.Invalid(field.NewPath("hostSubnetLength"), clusterNet.HostSubnetLength, "subnet length must be at least 2"))
+			}
 		}
-	}
 
-	serviceIPNet, err := netutils.ParseCIDRMask(clusterNet.ServiceNetwork)
-	if err != nil {
-		allErrs = append(allErrs, field.Invalid(field.NewPath("serviceNetwork"), clusterNet.ServiceNetwork, err.Error()))
-	}
+		serviceIPNet, err := netutils.ParseCIDRMask(clusterNet.ServiceNetwork)
+		if err != nil {
+			allErrs = append(allErrs, field.Invalid(field.NewPath("serviceNetwork"), clusterNet.ServiceNetwork, err.Error()))
+		}
 
-	if (clusterIPNet != nil) && (serviceIPNet != nil) && clusterIPNet.Contains(serviceIPNet.IP) {
-		allErrs = append(allErrs, field.Invalid(field.NewPath("serviceNetwork"), clusterNet.ServiceNetwork, "service network overlaps with cluster network"))
-	}
-	if (serviceIPNet != nil) && (clusterIPNet != nil) && serviceIPNet.Contains(clusterIPNet.IP) {
-		allErrs = append(allErrs, field.Invalid(field.NewPath("network"), clusterNet.Network, "cluster network overlaps with service network"))
+		if (clusterIPNet != nil) && (serviceIPNet != nil) && clusterIPNet.Contains(serviceIPNet.IP) {
+			allErrs = append(allErrs, field.Invalid(field.NewPath("serviceNetwork"), clusterNet.ServiceNetwork, "service network overlaps with cluster network"))
+		}
+		if (serviceIPNet != nil) && (clusterIPNet != nil) && serviceIPNet.Contains(clusterIPNet.IP) {
+			allErrs = append(allErrs, field.Invalid(field.NewPath("network"), clusterNet.Network, "cluster network overlaps with service network"))
+		}
 	}
 
 	if clusterNet.Name == sdnapi.ClusterNetworkDefault && defaultClusterNetwork != nil {

@@ -39,20 +39,37 @@ func clusterNetworkToString(n *osapi.ClusterNetwork) string {
 	return fmt.Sprintf("%s (network: %q, hostSubnetBits: %d, serviceNetwork: %q, pluginName: %q)", n.Name, n.Network, n.HostSubnetLength, n.ServiceNetwork, n.PluginName)
 }
 
+//determine if the first argument contains any of the second 
+func cidrListContains(cidrList []*net.IPNet, ipaddr net.IP) (*net.IPNet, bool) {
+	for _, cidr := range cidrList {
+		if cidr.Contains(ipaddr) {
+			return cidr, true
+		}
+	}
+		return nil, false
+}
+
 type NetworkInfo struct {
-	ClusterNetwork *net.IPNet
+	ClusterNetwork []*net.IPNet
 	ServiceNetwork *net.IPNet
 }
 
-func parseNetworkInfo(clusterNetwork string, serviceNetwork string) (*NetworkInfo, error) {
-	cn, err := netutils.ParseCIDRMask(clusterNetwork)
-	if err != nil {
-		_, cn, err := net.ParseCIDR(clusterNetwork)
+func parseNetworkInfo(clusterNetwork []osapi.ClusterNetworkEntry, serviceNetwork string) (*NetworkInfo, error) {
+	var cn []*net.IPNet
+
+
+	for _, entry := range clusterNetwork {
+		clusterAddress, err := netutils.ParseCIDRMask(entry.ClusterNetworkCIDR)
 		if err != nil {
-			return nil, fmt.Errorf("failed to parse ClusterNetwork CIDR %s: %v", clusterNetwork, err)
+			_, clusterAddress, err := net.ParseCIDR(entry.ClusterNetworkCIDR)
+			if err != nil {
+				return nil, fmt.Errorf("failed to parse ClusterNetwork CIDR %s: %v", clusterAddress, err)
+			}
+			glog.Errorf("Configured clusterNetworkCIDR value %q is invalid; treating it as %q", entry.ClusterNetworkCIDR, clusterAddress.String())
 		}
-		glog.Errorf("Configured clusterNetworkCIDR value %q is invalid; treating it as %q", clusterNetwork, cn.String())
+		cn = append(cn, clusterAddress)
 	}
+
 	sn, err := netutils.ParseCIDRMask(serviceNetwork)
 	if err != nil {
 		_, sn, err := net.ParseCIDR(serviceNetwork)
@@ -61,6 +78,7 @@ func parseNetworkInfo(clusterNetwork string, serviceNetwork string) (*NetworkInf
 		}
 		glog.Errorf("Configured serviceNetworkCIDR value %q is invalid; treating it as %q", serviceNetwork, sn.String())
 	}
+
 
 	return &NetworkInfo{
 		ClusterNetwork: cn,
@@ -80,8 +98,8 @@ func (ni *NetworkInfo) validateNodeIP(nodeIP string) error {
 		return fmt.Errorf("failed to parse node IP %s", nodeIP)
 	}
 
-	if ni.ClusterNetwork.Contains(ipaddr) {
-		return fmt.Errorf("node IP %s conflicts with cluster network %s", nodeIP, ni.ClusterNetwork.String())
+	if clusterIP, contains := cidrListContains(ni.ClusterNetwork, ipaddr); contains {
+		return fmt.Errorf("node IP %s conflicts with cluster network address %s", nodeIP, clusterIP.String())
 	}
 	if ni.ServiceNetwork.Contains(ipaddr) {
 		return fmt.Errorf("node IP %s conflicts with service network %s", nodeIP, ni.ServiceNetwork.String())
@@ -93,11 +111,13 @@ func (ni *NetworkInfo) validateNodeIP(nodeIP string) error {
 func (ni *NetworkInfo) checkHostNetworks(hostIPNets []*net.IPNet) error {
 	errList := []error{}
 	for _, ipNet := range hostIPNets {
-		if ipNet.Contains(ni.ClusterNetwork.IP) {
-			errList = append(errList, fmt.Errorf("cluster IP: %s conflicts with host network: %s", ni.ClusterNetwork.IP.String(), ipNet.String()))
+		for _,clusterCIDR := range ni.ClusterNetwork {
+			if ipNet.Contains(clusterCIDR.IP) {
+				errList = append(errList, fmt.Errorf("cluster IP: %s conflicts with host network: %s", clusterCIDR.IP.String(), ipNet.String()))
+			}
 		}
-		if ni.ClusterNetwork.Contains(ipNet.IP) {
-			errList = append(errList, fmt.Errorf("host network with IP: %s conflicts with cluster network: %s", ipNet.IP.String(), ni.ClusterNetwork.String()))
+		if clusterCIDR, contains  := cidrListContains(ni.ClusterNetwork, ipNet.IP); contains {
+			errList = append(errList, fmt.Errorf("host network with IP: %s conflicts with cluster network address: %s", ipNet.IP.String(), clusterCIDR.String()))
 		}
 		if ipNet.Contains(ni.ServiceNetwork.IP) {
 			errList = append(errList, fmt.Errorf("service IP: %s conflicts with host network: %s", ni.ServiceNetwork.String(), ipNet.String()))
@@ -116,8 +136,8 @@ func (ni *NetworkInfo) checkClusterObjects(subnets []osapi.HostSubnet, pods []ka
 		subnetIP, _, _ := net.ParseCIDR(subnet.Subnet)
 		if subnetIP == nil {
 			errList = append(errList, fmt.Errorf("failed to parse network address: %s", subnet.Subnet))
-		} else if !ni.ClusterNetwork.Contains(subnetIP) {
-			errList = append(errList, fmt.Errorf("existing node subnet: %s is not part of cluster network: %s", subnet.Subnet, ni.ClusterNetwork.String()))
+		} else if _, contains := cidrListContains(ni.ClusterNetwork, subnetIP); !contains {
+			errList = append(errList, fmt.Errorf("existing node subnet: %s in not part of any cluster network CIDR"))
 		}
 		if len(errList) >= 10 {
 			break
@@ -127,8 +147,8 @@ func (ni *NetworkInfo) checkClusterObjects(subnets []osapi.HostSubnet, pods []ka
 		if pod.Spec.SecurityContext != nil && pod.Spec.SecurityContext.HostNetwork {
 			continue
 		}
-		if pod.Status.PodIP != "" && !ni.ClusterNetwork.Contains(net.ParseIP(pod.Status.PodIP)) {
-			errList = append(errList, fmt.Errorf("existing pod %s:%s with IP %s is not part of cluster network %s", pod.Namespace, pod.Name, pod.Status.PodIP, ni.ClusterNetwork.String()))
+		if _, contains := cidrListContains(ni.ClusterNetwork, net.ParseIP(pod.Status.PodIP)); !contains && pod.Status.PodIP != "" {
+			errList = append(errList, fmt.Errorf("existing pod %s:%s with IP %s is not part of cluster network", pod.Namespace, pod.Name, pod.Status.PodIP))
 			if len(errList) >= 10 {
 				break
 			}
@@ -156,7 +176,7 @@ func getNetworkInfo(osClient *osclient.Client) (*NetworkInfo, error) {
 		return nil, err
 	}
 
-	return parseNetworkInfo(cn.Network, cn.ServiceNetwork)
+	return parseNetworkInfo(cn.ClusterDef, cn.ServiceNetwork)
 }
 
 type ResourceName string

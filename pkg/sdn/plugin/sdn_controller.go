@@ -54,7 +54,7 @@ func (plugin *OsdnNode) getLocalSubnet() (string, error) {
 	return subnet.Subnet, nil
 }
 
-func (plugin *OsdnNode) alreadySetUp(localSubnetGatewayCIDR, clusterNetworkCIDR string) bool {
+func (plugin *OsdnNode) alreadySetUp(localSubnetGatewayCIDR string, clusterNetworkCIDR []string) bool {
 	var found bool
 
 	exec := kexec.New()
@@ -83,9 +83,11 @@ func (plugin *OsdnNode) alreadySetUp(localSubnetGatewayCIDR, clusterNetworkCIDR 
 	}
 	found = false
 	for _, route := range routes {
-		if strings.Contains(route, clusterNetworkCIDR+" ") {
-			found = true
-			break
+		for _, clusterCIDR := range clusterNetworkCIDR {
+			if strings.Contains(route, clusterCIDR+" ") {
+				found = true
+				break
+			}
 		}
 	}
 	if !found {
@@ -130,7 +132,11 @@ func deleteLocalSubnetRoute(device, localSubnetCIDR string) {
 }
 
 func (plugin *OsdnNode) SetupSDN() (bool, error) {
-	clusterNetworkCIDR := plugin.networkInfo.ClusterNetwork.String()
+	var clusterNetworkCIDRs []string
+	for _, cidr := range plugin.networkInfo.ClusterNetwork {
+		clusterNetworkCIDRs = append(clusterNetworkCIDRs, cidr.String())
+	}
+
 	serviceNetworkCIDR := plugin.networkInfo.ServiceNetwork.String()
 
 	localSubnetCIDR := plugin.localSubnetCIDR
@@ -151,7 +157,7 @@ func (plugin *OsdnNode) SetupSDN() (bool, error) {
 	}
 
 	gwCIDR := fmt.Sprintf("%s/%d", localSubnetGateway, localSubnetMaskLength)
-	if plugin.alreadySetUp(gwCIDR, clusterNetworkCIDR) {
+	if plugin.alreadySetUp(gwCIDR, clusterNetworkCIDRs) {
 		glog.V(5).Infof("[SDN setup] no SDN setup required")
 		return false, nil
 	}
@@ -166,7 +172,7 @@ func (plugin *OsdnNode) SetupSDN() (bool, error) {
 	//	return false, err
 	//}
 
-	err = plugin.oc.SetupOVS(clusterNetworkCIDR, serviceNetworkCIDR, localSubnetCIDR, localSubnetGateway)
+	err = plugin.oc.SetupOVS(clusterNetworkCIDRs, serviceNetworkCIDR, localSubnetCIDR, localSubnetGateway)
 	if err != nil {
 		return false, err
 	}
@@ -176,7 +182,9 @@ func (plugin *OsdnNode) SetupSDN() (bool, error) {
 	defer deleteLocalSubnetRoute(TUN, localSubnetCIDR)
 	itx.SetLink("mtu", fmt.Sprint(plugin.mtu))
 	itx.SetLink("up")
-	itx.AddRoute(clusterNetworkCIDR, "proto", "kernel", "scope", "link")
+	for _, clusterNetworkCIDR := range clusterNetworkCIDRs {
+		itx.AddRoute(clusterNetworkCIDR, "proto", "kernel", "scope", "link")
+	}
 	itx.AddRoute(serviceNetworkCIDR)
 	err = itx.EndTransaction()
 	if err != nil {

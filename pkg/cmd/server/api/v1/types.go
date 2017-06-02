@@ -497,6 +497,8 @@ type MasterNetworkConfig struct {
 	NetworkPluginName string `json:"networkPluginName"`
 	// ClusterNetworkCIDR is the CIDR string to specify the global overlay network's L3 space
 	ClusterNetworkCIDR string `json:"clusterNetworkCIDR"`
+	// PLACEHOLDER
+	ClusterNetworkConfig []ClusterNetworkEntry `json:"clusterNetworkConfig"`
 	// HostSubnetLength is the number of bits to allocate to each host's subnet e.g. 8 would mean a /24 network on the host
 	HostSubnetLength uint32 `json:"hostSubnetLength"`
 	// ServiceNetwork is the CIDR string to specify the service networks
@@ -511,6 +513,11 @@ type MasterNetworkConfig struct {
 	// For security reasons, you should ensure that this range does not overlap with the CIDRs reserved for external ips,
 	// nodes, pods, or services.
 	IngressIPNetworkCIDR string `json:"ingressIPNetworkCIDR"`
+}
+
+// PLACEHOLDER
+type ClusterNetworkEntry struct {
+	ClusterNetworkCIDR string `json:"clusterNetworkCIDR"`
 }
 
 // ImageConfig holds the necessary configuration options for building image names for system components

@@ -16,9 +16,14 @@ type ClusterNetwork struct {
 	metav1.ObjectMeta
 
 	Network          string
+	ClusterDef []ClusterNetworkEntry
 	HostSubnetLength uint32
 	ServiceNetwork   string
 	PluginName       string
+}
+
+type ClusterNetworkEntry struct {
+	ClusterNetworkCIDR string
 }
 
 type ClusterNetworkList struct {

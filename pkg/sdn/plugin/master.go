@@ -24,7 +24,7 @@ type OsdnMaster struct {
 	kClient         kclientset.Interface
 	osClient        *osclient.Client
 	networkInfo     *NetworkInfo
-	subnetAllocator *netutils.SubnetAllocator
+	subnetAllocator []*netutils.SubnetAllocator
 	vnids           *masterVNIDMap
 	informers       shared.InformerFactory
 
@@ -47,7 +47,12 @@ func StartMaster(networkConfig osconfigapi.MasterNetworkConfig, osClient *osclie
 	}
 
 	var err error
-	master.networkInfo, err = parseNetworkInfo(networkConfig.ClusterNetworkCIDR, networkConfig.ServiceNetworkCIDR)
+	var clusterNetworkEntries []osapi.ClusterNetworkEntry
+	for _,cidr := range networkConfig.ClusterNetworkConfig {
+		clusterNetworkEntries = append(clusterNetworkEntries, osapi.ClusterNetworkEntry{ClusterNetworkCIDR: cidr.ClusterNetworkCIDR})
+	}
+	log.Infof("KEYWORD: just before parseNetworkInfo %s", clusterNetworkEntries)
+	master.networkInfo, err = parseNetworkInfo(clusterNetworkEntries, networkConfig.ServiceNetworkCIDR)
 	if err != nil {
 		return err
 	}
@@ -56,23 +61,28 @@ func StartMaster(networkConfig osconfigapi.MasterNetworkConfig, osClient *osclie
 		TypeMeta:   metav1.TypeMeta{Kind: "ClusterNetwork"},
 		ObjectMeta: metav1.ObjectMeta{Name: osapi.ClusterNetworkDefault},
 
-		Network:          networkConfig.ClusterNetworkCIDR,
+//		Network:          networkConfig.ClusterNetworkCIDR,
+		ClusterDef: clusterNetworkEntries,
 		HostSubnetLength: networkConfig.HostSubnetLength,
 		ServiceNetwork:   networkConfig.ServiceNetworkCIDR,
 		PluginName:       networkConfig.NetworkPluginName,
 	}
 	osapivalidation.SetDefaultClusterNetwork(*configCN)
+	log.Infof("KEYWORD: osapi.SetDefaultClusterNetwork - finished")
 
 	existingCN, err := master.osClient.ClusterNetwork().Get(osapi.ClusterNetworkDefault, metav1.GetOptions{})
 	if err != nil {
 		if !kapierrors.IsNotFound(err) {
+			log.Infof("KEYWORD: first")
 			return err
 		}
 		if err = master.checkClusterNetworkAgainstLocalNetworks(); err != nil {
+			log.Infof("KEYWORD: second")
 			return err
 		}
 
 		if _, err = master.osClient.ClusterNetwork().Create(configCN); err != nil {
+			log.Infof("KEYWORD: third")
 			return err
 		}
 		log.Infof("Created ClusterNetwork %s", clusterNetworkToString(configCN))
