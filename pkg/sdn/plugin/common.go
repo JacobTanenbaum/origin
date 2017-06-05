@@ -137,7 +137,7 @@ func (ni *NetworkInfo) checkClusterObjects(subnets []osapi.HostSubnet, pods []ka
 		if subnetIP == nil {
 			errList = append(errList, fmt.Errorf("failed to parse network address: %s", subnet.Subnet))
 		} else if _, contains := cidrListContains(ni.ClusterNetwork, subnetIP); !contains {
-			errList = append(errList, fmt.Errorf("existing node subnet: %s in not part of any cluster network CIDR"))
+			errList = append(errList, fmt.Errorf("existing node subnet: %s in not part of any cluster network CIDR", subnet.Subnet))
 		}
 		if len(errList) >= 10 {
 			break
