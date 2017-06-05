@@ -497,7 +497,7 @@ type MasterNetworkConfig struct {
 	NetworkPluginName string `json:"networkPluginName"`
 	// ClusterNetworkCIDR is the CIDR string to specify the global overlay network's L3 space
 	ClusterNetworkCIDR string `json:"clusterNetworkCIDR"`
-	// PLACEHOLDER
+	// ClusterNetworkConfig is used to specify the global overlay network's L3 space
 	ClusterNetworkConfig []ClusterNetworkEntry `json:"clusterNetworkConfig"`
 	// HostSubnetLength is the number of bits to allocate to each host's subnet e.g. 8 would mean a /24 network on the host
 	HostSubnetLength uint32 `json:"hostSubnetLength"`
@@ -515,7 +515,7 @@ type MasterNetworkConfig struct {
 	IngressIPNetworkCIDR string `json:"ingressIPNetworkCIDR"`
 }
 
-// PLACEHOLDER
+// ClusterNetworkEntry defines an L3 space for the global overlay network
 type ClusterNetworkEntry struct {
 	ClusterNetworkCIDR string `json:"clusterNetworkCIDR"`
 }

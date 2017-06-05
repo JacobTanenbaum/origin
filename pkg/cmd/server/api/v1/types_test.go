@@ -216,6 +216,7 @@ masterClients:
 masterPublicURL: ""
 networkConfig:
   clusterNetworkCIDR: ""
+  clusterNetworkConfig: null
   externalIPNetworkCIDRs: null
   hostSubnetLength: 0
   ingressIPNetworkCIDR: ""
