@@ -20,11 +20,26 @@ func SetDefaultClusterNetwork(cn sdnapi.ClusterNetwork) {
 	defaultClusterNetwork = &cn
 }
 
+//intersect tests two CIDR addresses to see if the first contains the second 
+func intersect(cidr1, cidr2 string) bool {
+	_,net1,_ := net.ParseCIDR(cidr1)
+	_, net2, err := net.ParseCIDR(cidr2)
+	if err != nil {
+		//cidr2 was not a cidr address which will be caught later
+		return false
+	}
+	return net1.Contains(net2.IP)
+}
+
+
 // ValidateClusterNetwork tests if required fields in the ClusterNetwork are set, and ensures that the "default" ClusterNetwork can only be set to the correct values
 func ValidateClusterNetwork(clusterNet *sdnapi.ClusterNetwork) field.ErrorList {
 	allErrs := validation.ValidateObjectMeta(&clusterNet.ObjectMeta, false, path.ValidatePathSegmentName, field.NewPath("metadata"))
 
-	for _, cidr := range clusterNet.ClusterDef{
+	if len(clusterNet.ClusterDef) == 0 {
+		allErrs = append(allErrs, field.Invalid(field.NewPath("clusterDef"), clusterNet.ClusterDef, "empty"))
+	}
+	for index, cidr := range clusterNet.ClusterDef{
 		clusterIPNet, err := netutils.ParseCIDRMask(cidr.ClusterNetworkCIDR)
 		if err != nil {
 			allErrs = append(allErrs, field.Invalid(field.NewPath("network"), clusterNet.Network, err.Error()))
@@ -41,7 +56,11 @@ func ValidateClusterNetwork(clusterNet *sdnapi.ClusterNetwork) field.ErrorList {
 		if err != nil {
 			allErrs = append(allErrs, field.Invalid(field.NewPath("serviceNetwork"), clusterNet.ServiceNetwork, err.Error()))
 		}
-
+		for _, something := range clusterNet.ClusterDef[index+1:] {
+			if intersect(cidr.ClusterNetworkCIDR, something.ClusterNetworkCIDR) {
+				allErrs = append(allErrs, field.Invalid(field.NewPath("clusterNetworkCIDR"), clusterNet.ClusterDef, "two of the specified cidr addresses overlap"))
+			}
+		}
 		if (clusterIPNet != nil) && (serviceIPNet != nil) && clusterIPNet.Contains(serviceIPNet.IP) {
 			allErrs = append(allErrs, field.Invalid(field.NewPath("serviceNetwork"), clusterNet.ServiceNetwork, "service network overlaps with cluster network"))
 		}
@@ -51,9 +70,18 @@ func ValidateClusterNetwork(clusterNet *sdnapi.ClusterNetwork) field.ErrorList {
 	}
 
 	if clusterNet.Name == sdnapi.ClusterNetworkDefault && defaultClusterNetwork != nil {
-		if clusterNet.Network != defaultClusterNetwork.Network {
-			allErrs = append(allErrs, field.Invalid(field.NewPath("network"), clusterNet.Network, "cannot change the default ClusterNetwork record via API."))
+		if len(clusterNet.ClusterDef) == len(defaultClusterNetwork.ClusterDef) {
+			for index, _ := range defaultClusterNetwork.ClusterDef {
+				if clusterNet.ClusterDef[index] != defaultClusterNetwork.ClusterDef[index] {
+					allErrs = append(allErrs, field.Invalid(field.NewPath("ClusterDef"), clusterNet.ClusterDef, "cannot change the default ClusterNetwork record via API"))
+				}
+			}
+		} else {
+			allErrs = append(allErrs, field.Invalid(field.NewPath("ClusterDef"), clusterNet.ClusterDef, "cannot change the default ClusterNetwork record via API"))
 		}
+//		if clusterNet.Network != defaultClusterNetwork.Network {
+//			allErrs = append(allErrs, field.Invalid(field.NewPath("network"), clusterNet.Network, "cannot change the default ClusterNetwork record via API."))
+//		}
 		if clusterNet.HostSubnetLength != defaultClusterNetwork.HostSubnetLength {
 			allErrs = append(allErrs, field.Invalid(field.NewPath("hostSubnetLength"), clusterNet.HostSubnetLength, "cannot change the default ClusterNetwork record via API."))
 		}
