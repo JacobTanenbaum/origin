@@ -155,6 +155,16 @@ func (master *OsdnMaster) checkClusterNetworkAgainstClusterObjects() error {
 func clusterNetworkChanged(obj *osapi.ClusterNetwork, old *osapi.ClusterNetwork) (bool, error) {
 	changed := false
 
+	if !clusterDefEquals(old.ClusterDef, obj.ClusterDef) {
+		fmt.Printf("It's MACHO MAN RANDY SAVAGE\n")
+		//check if it is only the order is changed 
+
+		//check if one is a larger version of another
+
+		//check if one is a smaller version of another
+
+	}
+
 	if old.Network != obj.Network {
 		changed = true
 
@@ -187,4 +197,21 @@ func clusterNetworkChanged(obj *osapi.ClusterNetwork, old *osapi.ClusterNetwork)
 	}
 
 	return changed, nil
+}
+
+func clusterDefEquals( obj, old []osapi.ClusterNetworkEntry) bool {
+	if obj == nil && old == nil {
+		//this should never happen
+		return true;
+	}
+	if (obj ==nil || old == nil) || (len(obj) != len(old)) {
+		//first case should never happen
+		return false
+	}
+	for i := range old {
+		if old[i] != obj[i] {
+			return false
+		}
+	}
+	return true
 }

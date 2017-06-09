@@ -2,6 +2,7 @@ package plugin
 
 import (
 	"testing"
+	"fmt"
 
 	osapi "github.com/openshift/origin/pkg/sdn/api"
 )
@@ -9,6 +10,7 @@ import (
 func Test_clusterNetworkChanged(t *testing.T) {
 	origCN := osapi.ClusterNetwork{
 		Network:          "10.128.0.0/14",
+		ClusterDef: []osapi.ClusterNetworkEntry{osapi.ClusterNetworkEntry{ClusterNetworkCIDR:"10.128.0.0/14"}},
 		HostSubnetLength: 10,
 		ServiceNetwork:   "172.30.0.0/16",
 		PluginName:       "redhat/openshift-ovs-subnet",
@@ -27,7 +29,7 @@ func Test_clusterNetworkChanged(t *testing.T) {
 		{
 			name: "larger Network",
 			changes: &osapi.ClusterNetwork{
-				Network: "10.128.0.0/12",
+				ClusterDef: []osapi.ClusterNetworkEntry{osapi.ClusterNetworkEntry{ClusterNetworkCIDR:"10.128.0.0/12"}},
 			},
 			expectError: false,
 		},
@@ -99,6 +101,11 @@ func Test_clusterNetworkChanged(t *testing.T) {
 	for _, test := range tests {
 		newCN := origCN
 		expectChanged := false
+		if test.changes.ClusterDef != nil {
+			fmt.Printf("AWW YEAHHHH!!!\n")
+			newCN.ClusterDef = test.changes.ClusterDef
+			expectChanged = true
+		}
 		if test.changes.Network != "" {
 			newCN.Network = test.changes.Network
 			expectChanged = true
