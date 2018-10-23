@@ -291,7 +291,7 @@ func pluginImplementsNetworkPolicy() bool {
 	default:
 		// If we can't detect the plugin, we assume it doesn't support
 		// NetworkPolicy, so the tests will work under kubenet
-		return false
+		return true
 	}
 }
 

@@ -24,6 +24,7 @@ import (
 	"k8s.io/kubernetes/test/e2e/framework"
 	imageutils "k8s.io/kubernetes/test/utils/image"
 
+	"time"
 	"fmt"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -81,8 +82,9 @@ var _ = Describe("[Area:Networking] NetworkPolicy", func() {
 			// Create a pod with name 'client-b', which will attempt to comunicate with the server,
 			// but should not be able to now that isolation is on.
 			testCannotConnect(f, ns, "client-cannot-connect", service, 80)
-		})
 
+		})
+/*
 		It("should enforce policy based on PodSelector [Feature:OSNetworkPolicy]", func() {
 			ns := f.Namespace
 
@@ -389,6 +391,7 @@ var _ = Describe("[Area:Networking] NetworkPolicy", func() {
 			testCanConnect(f, nsB, "client-b2", service, 80)
 			testCannotConnect(f, nsA, "client-b2", service, 80)
 		})
+*/
 	})
 })
 
@@ -556,13 +559,16 @@ func createServerPodAndService(f *framework.Framework, namespace *kapiv1.Namespa
 }
 
 func cleanupServerPodAndService(f *framework.Framework, pod *kapiv1.Pod, service *kapiv1.Service) {
-	By("Cleaning up the server.")
-	if err := f.ClientSet.Core().Pods(pod.Namespace).Delete(pod.Name, nil); err != nil {
-		framework.Failf("unable to cleanup pod %v: %v", pod.Name, err)
-	}
+	framework.Logf("KEYWORD")
+	time.Sleep(2 * time.Second)
 	By("Cleaning up the server's service.")
-	if err := f.ClientSet.Core().Services(service.Namespace).Delete(service.Name, nil); err != nil {
+	if err := f.ClientSet.CoreV1().Services(service.Namespace).Delete(service.Name, nil); err != nil {
 		framework.Failf("unable to cleanup svc %v: %v", service.Name, err)
+	}
+	time.Sleep(2 * time.Second)
+	By("Cleaning up the server.")
+	if err := f.ClientSet.CoreV1().Pods(pod.Namespace).Delete(pod.Name, nil); err != nil {
+		framework.Failf("unable to cleanup pod %v: %v", pod.Name, err)
 	}
 }
 
