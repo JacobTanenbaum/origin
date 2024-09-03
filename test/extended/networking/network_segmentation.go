@@ -30,7 +30,6 @@ import (
 	"k8s.io/kubernetes/test/e2e/framework"
 	e2ekubectl "k8s.io/kubernetes/test/e2e/framework/kubectl"
 	frameworkpod "k8s.io/kubernetes/test/e2e/framework/pod"
-	e2eskipper "k8s.io/kubernetes/test/e2e/framework/skipper"
 	admissionapi "k8s.io/pod-security-admission/api"
 	utilnet "k8s.io/utils/net"
 
@@ -79,9 +78,6 @@ var _ = Describe("[sig-network][OCPFeatureGate:NetworkSegmentation][Feature:User
 						clientPodConfig podConfiguration,
 						serverPodConfig podConfiguration,
 					) {
-						if netConfig.topology == "layer3" {
-							e2eskipper.Skipf("IPv6 routes are not configured on the tech-preview lane since the cluster config is single-stack IPv4")
-						}
 						var err error
 
 						netConfig.namespace = f.Namespace.Name
@@ -917,7 +913,10 @@ func httpServerContainerCmd(port uint16) []string {
 // takes the CLI, ipv4 and ipv6 cidrs and returns the correct cidr family for the cluster under test
 func correctCIDRFamily(oc *exutil.CLI, ipv4CIDR, ipv6CIDR string) string {
 	hasIPv4, hasIPv6, err := GetIPAddressFamily(oc)
-	Expect(err).NotTo(HaveOccurred())
+	if err != nil {
+		panic(fmt.Sprintf("unable to determine supported ip families: %v", err))
+
+	}
 	// dual stack cluster
 	if hasIPv6 && hasIPv4 {
 		return strings.Join([]string{ipv4CIDR, ipv6CIDR}, ",")
